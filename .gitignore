@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 
 data/
+pdfs/
 results/
 neo4j-data/
 neo4j-logs/

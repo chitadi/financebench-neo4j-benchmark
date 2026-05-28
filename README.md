@@ -48,10 +48,13 @@ Node properties:
 
 ## Setup
 
+Python runs the benchmark CLI and installs libraries such as `requests`, `neo4j`, and `pymupdf`.
+Docker runs the Neo4j database. You need both for the end-to-end benchmark.
+
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+python -m pip install -e ".[dev]"
 cp .env.example .env
 docker compose up -d
 ```

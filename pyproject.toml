@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "financebench-neo4j-benchmark"
 version = "0.1.0"
 description = "V1 Neo4j GraphRAG benchmark harness for FinanceBench"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
   "neo4j>=5.26.0",
   "pymupdf>=1.24.0",

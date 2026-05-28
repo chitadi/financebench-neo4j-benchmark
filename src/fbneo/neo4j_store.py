@@ -81,7 +81,7 @@ class Neo4jStore:
             "CREATE VECTOR INDEX chunk_embedding_vector IF NOT EXISTS "
             "FOR (c:Chunk) ON (c.embedding) "
             f"OPTIONS {{indexConfig: {{`vector.dimensions`: {embedding_dimension}, "
-            "`vector.similarity_function`: 'cosine'}}}"
+            "`vector.similarity_function`: 'cosine'}}"
         )
         self._run("CALL db.awaitIndexes(300)")
 
@@ -190,7 +190,7 @@ class Neo4jStore:
         try:
             return self._run(
                 """
-                CALL db.index.fulltext.queryNodes('chunk_text_fulltext', $query, {limit: $k})
+                CALL db.index.fulltext.queryNodes('chunk_text_fulltext', $search_query, {limit: $k})
                 YIELD node, score
                 RETURN node.chunk_id AS chunk_id,
                        node.doc_name AS doc_name,
@@ -199,7 +199,7 @@ class Neo4jStore:
                        node.text AS text,
                        score AS score
                 """,
-                query=query,
+                search_query=query,
                 k=k,
             )
         except Neo4jError:

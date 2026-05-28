@@ -52,7 +52,10 @@ class HashEmbedder(Embedder):
 class OpenAICompatibleEmbedder(Embedder):
     def __init__(self, *, base_url: str, api_key: str, model: str, dimension: int) -> None:
         if not api_key:
-            raise ValueError("EMBEDDING_API_KEY is required when EMBEDDING_PROVIDER=openai")
+            raise ValueError(
+                "EMBEDDING_API_KEY or OPENROUTER_API_KEY is required when "
+                "EMBEDDING_PROVIDER uses an OpenAI-compatible API"
+            )
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
@@ -64,7 +67,7 @@ class OpenAICompatibleEmbedder(Embedder):
         response = requests.post(
             f"{self.base_url}/embeddings",
             headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
-            json={"model": self.model, "input": texts},
+            json={"model": self.model, "input": texts, "encoding_format": "float"},
             timeout=120,
         )
         response.raise_for_status()
@@ -85,7 +88,7 @@ class OpenAICompatibleEmbedder(Embedder):
 def build_embedder(settings: Settings) -> Embedder:
     if settings.embedding_provider == "hash":
         return HashEmbedder(settings.embedding_dimension)
-    if settings.embedding_provider == "openai":
+    if settings.embedding_provider in {"openai", "openai-compatible", "openrouter"}:
         return OpenAICompatibleEmbedder(
             base_url=settings.embedding_base_url,
             api_key=settings.embedding_api_key,
@@ -93,4 +96,3 @@ def build_embedder(settings: Settings) -> Embedder:
             dimension=settings.embedding_dimension,
         )
     raise ValueError(f"Unsupported EMBEDDING_PROVIDER={settings.embedding_provider!r}")
-

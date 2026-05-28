@@ -5,6 +5,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+GEMINI_OPENAI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_QWEN_EMBEDDING_MODEL = "qwen/qwen3-embedding-4b"
+DEFAULT_QWEN_EMBEDDING_DIMENSION = 2560
+DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+DEFAULT_OPENAI_EMBEDDING_DIMENSION = 1536
+
+
 def _load_dotenv(path: str | Path = ".env") -> None:
     env_path = Path(path)
     if not env_path.exists():
@@ -31,6 +40,14 @@ def _float_env(name: str, default: float) -> float:
     if value is None or value == "":
         return default
     return float(value)
+
+
+def _first_env(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+    return default
 
 
 @dataclass(frozen=True)
@@ -85,6 +102,25 @@ def load_settings() -> Settings:
         os.environ.get("DOCUMENT_INFO_FILE", data_dir / "financebench_document_information.jsonl")
     )
 
+    embedding_provider = os.environ.get("EMBEDDING_PROVIDER", "openrouter").lower()
+    if embedding_provider == "hash":
+        embedding_default_dimension = 384
+        embedding_default_model = "hash"
+        embedding_default_base_url = ""
+        embedding_api_key = ""
+    elif embedding_provider == "openai":
+        embedding_default_dimension = DEFAULT_OPENAI_EMBEDDING_DIMENSION
+        embedding_default_model = DEFAULT_OPENAI_EMBEDDING_MODEL
+        embedding_default_base_url = OPENAI_BASE_URL
+        embedding_api_key = _first_env("EMBEDDING_API_KEY", "OPENAI_API_KEY")
+    else:
+        embedding_default_dimension = DEFAULT_QWEN_EMBEDDING_DIMENSION
+        embedding_default_model = DEFAULT_QWEN_EMBEDDING_MODEL
+        embedding_default_base_url = OPENROUTER_BASE_URL
+        embedding_api_key = _first_env("EMBEDDING_API_KEY", "OPENROUTER_API_KEY")
+
+    llm_api_key = _first_env("LLM_API_KEY", "GEMINI_API_KEY")
+
     return Settings(
         neo4j_uri=os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
         neo4j_user=os.environ.get("NEO4J_USER", "neo4j"),
@@ -101,14 +137,14 @@ def load_settings() -> Settings:
         retrieval_fulltext_k=_int_env("RETRIEVAL_FULLTEXT_K", 30),
         retrieval_final_k=_int_env("RETRIEVAL_FINAL_K", 8),
         retrieval_neighbor_window=_int_env("RETRIEVAL_NEIGHBOR_WINDOW", 1),
-        embedding_provider=os.environ.get("EMBEDDING_PROVIDER", "hash").lower(),
-        embedding_dimension=_int_env("EMBEDDING_DIMENSION", 384),
-        embedding_model=os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small"),
-        embedding_base_url=os.environ.get("EMBEDDING_BASE_URL", "https://api.openai.com/v1"),
-        embedding_api_key=os.environ.get("EMBEDDING_API_KEY", ""),
-        llm_base_url=os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1"),
-        llm_api_key=os.environ.get("LLM_API_KEY", ""),
-        llm_model=os.environ.get("LLM_MODEL", "gpt-4o-mini"),
+        embedding_provider=embedding_provider,
+        embedding_dimension=_int_env("EMBEDDING_DIMENSION", embedding_default_dimension),
+        embedding_model=os.environ.get("EMBEDDING_MODEL", embedding_default_model),
+        embedding_base_url=os.environ.get("EMBEDDING_BASE_URL", embedding_default_base_url),
+        embedding_api_key=embedding_api_key,
+        llm_base_url=os.environ.get("LLM_BASE_URL", GEMINI_OPENAI_BASE_URL),
+        llm_api_key=llm_api_key,
+        llm_model=os.environ.get("LLM_MODEL", "gemini-2.5-flash"),
         llm_temperature=_float_env("LLM_TEMPERATURE", 0.0),
         judge_provider=os.environ.get("JUDGE_PROVIDER", "heuristic").lower(),
         judge_model=os.environ.get("JUDGE_MODEL", ""),

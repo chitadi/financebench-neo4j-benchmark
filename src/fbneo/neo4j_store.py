@@ -35,6 +35,26 @@ class Neo4jStore:
     def verify_connectivity(self) -> None:
         self.driver.verify_connectivity()
 
+    def _existing_vector_dimension(self) -> int | None:
+        try:
+            rows = self._run(
+                """
+                SHOW INDEXES
+                YIELD name, options
+                WHERE name = 'chunk_embedding_vector'
+                RETURN options
+                """
+            )
+        except Neo4jError:
+            return None
+        if not rows:
+            return None
+        config = (rows[0].get("options") or {}).get("indexConfig") or {}
+        dimension = config.get("vector.dimensions")
+        if dimension is None:
+            return None
+        return int(dimension)
+
     def ensure_schema(self, embedding_dimension: int) -> None:
         statements = [
             "CREATE CONSTRAINT company_name IF NOT EXISTS FOR (c:Company) REQUIRE c.name IS UNIQUE",
@@ -51,15 +71,18 @@ class Neo4jStore:
                 "CREATE FULLTEXT INDEX chunk_text_fulltext IF NOT EXISTS "
                 "FOR (c:Chunk) ON EACH [c.text]"
             ),
-            (
-                "CREATE VECTOR INDEX chunk_embedding_vector IF NOT EXISTS "
-                "FOR (c:Chunk) ON (c.embedding) "
-                f"OPTIONS {{indexConfig: {{`vector.dimensions`: {embedding_dimension}, "
-                "`vector.similarity_function`: 'cosine'}}}"
-            ),
         ]
         for statement in statements:
             self._run(statement)
+        existing_dimension = self._existing_vector_dimension()
+        if existing_dimension is not None and existing_dimension != embedding_dimension:
+            self._run("DROP INDEX chunk_embedding_vector IF EXISTS")
+        self._run(
+            "CREATE VECTOR INDEX chunk_embedding_vector IF NOT EXISTS "
+            "FOR (c:Chunk) ON (c.embedding) "
+            f"OPTIONS {{indexConfig: {{`vector.dimensions`: {embedding_dimension}, "
+            "`vector.similarity_function`: 'cosine'}}}"
+        )
         self._run("CALL db.awaitIndexes(300)")
 
     def reset(self) -> None:

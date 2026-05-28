@@ -45,7 +45,8 @@ def _extractive_fallback(question: str, contexts: list[RetrievedContext]) -> Ans
         snippets.append(f"[Source {i}] {ctx.doc_name} p.{ctx.page_num}: {text[:700]}")
     return AnswerResult(
         answer=(
-            "LLM_API_KEY is not configured, so this is a retrieval-only fallback. "
+            "LLM_API_KEY or GEMINI_API_KEY is not configured, so this is a "
+            "retrieval-only fallback. "
             f"Question: {question}\n\n" + "\n\n".join(snippets)
         ),
         model="extractive-fallback",
@@ -88,4 +89,3 @@ def answer_question(
         token_usage=data.get("usage") or {},
         fallback=False,
     )
-

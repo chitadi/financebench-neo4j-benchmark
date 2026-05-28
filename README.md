@@ -13,7 +13,7 @@ V1 proves the pipeline:
 3. build a simple Neo4j lexical graph
 4. create full-text and vector indexes
 5. retrieve hybrid context
-6. answer with an OpenAI-compatible chat model
+6. answer with Gemini 2.5 Flash through Google's OpenAI-compatible chat endpoint
 7. score and report results
 
 Rich finance-specific nodes and relationships are deferred to later versions.
@@ -106,18 +106,28 @@ python -m fbneo report --run results/<run>.json
 
 ## Model Configuration
 
-Default mode uses deterministic local hash embeddings so ingestion can run without model keys. For a real benchmark, configure OpenAI-compatible embeddings and chat:
+The benchmark defaults are set up for Gemini answers and Qwen embeddings:
 
 ```env
-EMBEDDING_PROVIDER=openai
-EMBEDDING_BASE_URL=https://api.openai.com/v1
-EMBEDDING_API_KEY=...
-EMBEDDING_MODEL=text-embedding-3-small
-EMBEDDING_DIMENSION=1536
+OPENROUTER_API_KEY=...
+GEMINI_API_KEY=...
 
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=...
-LLM_MODEL=gpt-4o-mini
+EMBEDDING_PROVIDER=openrouter
+EMBEDDING_BASE_URL=https://openrouter.ai/api/v1
+EMBEDDING_MODEL=qwen/qwen3-embedding-4b
+EMBEDDING_DIMENSION=2560
+
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_MODEL=gemini-2.5-flash
 ```
 
-If `LLM_API_KEY` is empty, `answer` and `eval` use an extractive fallback so the pipeline still runs.
+`EMBEDDING_API_KEY` can be used instead of `OPENROUTER_API_KEY`, and `LLM_API_KEY` can be used instead of `GEMINI_API_KEY`. If `LLM_API_KEY` and `GEMINI_API_KEY` are empty, `answer` and `eval` use an extractive fallback so retrieval can still be inspected.
+
+For keyless local smoke tests, set:
+
+```env
+EMBEDDING_PROVIDER=hash
+EMBEDDING_DIMENSION=384
+```
+
+Neo4j vector indexes are created with a fixed embedding dimension. If you ingest with hash embeddings and later switch to Qwen embeddings, run a full `python -m fbneo ingest --reset`; schema setup will recreate the vector index when the configured dimension changes.

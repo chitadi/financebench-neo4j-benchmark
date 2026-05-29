@@ -22,13 +22,13 @@ def cmd_validate_data(_args: argparse.Namespace) -> int:
             print(f"ERROR: {error}")
         return 1
 
-    from .data import load_document_info, merge_question_document_info
+    from .data import load_document_info, question_document_info
 
     questions = load_questions(settings.questions_file)
-    docs = merge_question_document_info(questions, load_document_info(settings.document_info_file))
+    docs = question_document_info(questions, load_document_info(settings.document_info_file))
     missing = [doc.doc_name for doc in docs.values() if find_pdf(settings.pdf_dir, doc.doc_name) is None]
     print(f"Questions: {len(questions)}")
-    print(f"Documents in manifest: {len(docs)}")
+    print(f"Documents used by questions: {len(docs)}")
     print(f"PDFs in {settings.pdf_dir}: {len(list(settings.pdf_dir.glob('*.pdf')))}")
     if missing:
         print(f"Missing PDFs for manifest docs: {len(missing)}")

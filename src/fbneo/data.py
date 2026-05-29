@@ -99,6 +99,27 @@ def merge_question_document_info(
     return merged
 
 
+def question_document_info(
+    questions: list[FinanceBenchQuestion],
+    docs: dict[str, DocumentMeta],
+) -> dict[str, DocumentMeta]:
+    selected: dict[str, DocumentMeta] = {}
+    for q in questions:
+        names = [q.doc_name]
+        names.extend(ev.doc_name for ev in q.evidence if ev.doc_name)
+        for doc_name in names:
+            if not doc_name or doc_name in selected:
+                continue
+            selected[doc_name] = docs.get(
+                doc_name,
+                DocumentMeta(
+                    doc_name=doc_name,
+                    company=q.company,
+                ),
+            )
+    return selected
+
+
 def validate_data_files(
     questions_file: Path,
     document_info_file: Path,

@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-import hashlib
-import math
-import re
 from abc import ABC, abstractmethod
 
 import requests
 
 from .config import Settings
-
-_TOKEN_RE = re.compile(r"[A-Za-z0-9$%.,-]+")
 
 
 class Embedder(ABC):
@@ -21,32 +16,6 @@ class Embedder(ABC):
 
     def embed_many(self, texts: list[str]) -> list[list[float]]:
         return [self.embed_one(text) for text in texts]
-
-
-class HashEmbedder(Embedder):
-    """Small deterministic embedding for local smoke tests.
-
-    This is not a serious semantic embedding model. It exists so ingestion,
-    vector indexes, and hybrid retrieval can be tested before API keys are set.
-    """
-
-    def __init__(self, dimension: int) -> None:
-        self.dimension = dimension
-
-    def embed_one(self, text: str) -> list[float]:
-        vector = [0.0] * self.dimension
-        for raw_token in _TOKEN_RE.findall(text.lower()):
-            token = raw_token.strip(".,")
-            if not token:
-                continue
-            digest = hashlib.sha256(token.encode("utf-8")).digest()
-            idx = int.from_bytes(digest[:4], "big") % self.dimension
-            sign = 1.0 if digest[4] % 2 == 0 else -1.0
-            vector[idx] += sign
-        norm = math.sqrt(sum(v * v for v in vector))
-        if norm == 0:
-            return vector
-        return [round(v / norm, 8) for v in vector]
 
 
 class OpenAICompatibleEmbedder(Embedder):
@@ -86,13 +55,14 @@ class OpenAICompatibleEmbedder(Embedder):
 
 
 def build_embedder(settings: Settings) -> Embedder:
-    if settings.embedding_provider == "hash":
-        return HashEmbedder(settings.embedding_dimension)
-    if settings.embedding_provider in {"openai", "openai-compatible", "openrouter"}:
-        return OpenAICompatibleEmbedder(
-            base_url=settings.embedding_base_url,
-            api_key=settings.embedding_api_key,
-            model=settings.embedding_model,
-            dimension=settings.embedding_dimension,
+    if settings.embedding_provider != "openrouter":
+        raise ValueError(
+            f"Unsupported EMBEDDING_PROVIDER={settings.embedding_provider!r}. "
+            "This benchmark uses EMBEDDING_PROVIDER=openrouter."
         )
-    raise ValueError(f"Unsupported EMBEDDING_PROVIDER={settings.embedding_provider!r}")
+    return OpenAICompatibleEmbedder(
+        base_url=settings.embedding_base_url,
+        api_key=settings.embedding_api_key,
+        model=settings.embedding_model,
+        dimension=settings.embedding_dimension,
+    )

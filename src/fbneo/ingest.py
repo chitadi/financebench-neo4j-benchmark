@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from .chunking import chunk_page_text, stable_chunk_id
 from .config import Settings
-from .data import load_document_info, load_questions, merge_question_document_info
+from .data import load_document_info, load_questions, question_document_info
 from .embeddings import Embedder
 from .pdf import extract_pages, find_pdf
 from .types import Chunk, DocumentMeta, PageText
@@ -71,7 +71,7 @@ def load_document_manifest(settings: Settings) -> dict[str, DocumentMeta]:
     docs = load_document_info(settings.document_info_file)
     if settings.questions_file.exists():
         questions = load_questions(settings.questions_file)
-        docs = merge_question_document_info(questions, docs)
+        docs = question_document_info(questions, docs)
     return docs
 
 

@@ -124,13 +124,6 @@ LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 LLM_MODEL=gemini-2.5-flash
 ```
 
-`EMBEDDING_API_KEY` can be used instead of `OPENROUTER_API_KEY`, and `LLM_API_KEY` can be used instead of `GEMINI_API_KEY`. If `LLM_API_KEY` and `GEMINI_API_KEY` are empty, `answer` and `eval` use an extractive fallback so retrieval can still be inspected.
+`EMBEDDING_API_KEY` can be used instead of `OPENROUTER_API_KEY`, and `LLM_API_KEY` can be used instead of `GEMINI_API_KEY`. OpenRouter embeddings are required for ingestion and retrieval. If `LLM_API_KEY` and `GEMINI_API_KEY` are empty, `answer` and `eval` use an extractive fallback after retrieval.
 
-For keyless local smoke tests, set:
-
-```env
-EMBEDDING_PROVIDER=hash
-EMBEDDING_DIMENSION=384
-```
-
-Neo4j vector indexes are created with a fixed embedding dimension. If you ingest with hash embeddings and later switch to Qwen embeddings, run a full `python -m fbneo ingest --reset`; schema setup will recreate the vector index when the configured dimension changes.
+Neo4j vector indexes are created with a fixed embedding dimension. If you change embedding models or dimensions, run a full `python -m fbneo ingest --reset`; schema setup will recreate the vector index when the configured dimension changes.

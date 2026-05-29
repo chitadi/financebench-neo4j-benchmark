@@ -8,7 +8,6 @@ MODEL_ENV_KEYS = [
     "EMBEDDING_BASE_URL",
     "EMBEDDING_API_KEY",
     "OPENROUTER_API_KEY",
-    "OPENAI_API_KEY",
     "LLM_BASE_URL",
     "LLM_API_KEY",
     "LLM_MODEL",
@@ -45,29 +44,3 @@ def test_provider_specific_api_key_fallbacks(monkeypatch, tmp_path) -> None:
 
     assert settings.embedding_api_key == "openrouter-test-key"
     assert settings.llm_api_key == "gemini-test-key"
-
-
-def test_hash_embedding_defaults_remain_available(monkeypatch, tmp_path) -> None:
-    monkeypatch.chdir(tmp_path)
-    _clear_model_env(monkeypatch)
-    monkeypatch.setenv("EMBEDDING_PROVIDER", "hash")
-
-    settings = load_settings()
-
-    assert settings.embedding_provider == "hash"
-    assert settings.embedding_dimension == 384
-    assert settings.embedding_model == "hash"
-    assert settings.embedding_base_url == ""
-
-
-def test_openai_embedding_defaults_remain_supported(monkeypatch, tmp_path) -> None:
-    monkeypatch.chdir(tmp_path)
-    _clear_model_env(monkeypatch)
-    monkeypatch.setenv("EMBEDDING_PROVIDER", "openai")
-
-    settings = load_settings()
-
-    assert settings.embedding_provider == "openai"
-    assert settings.embedding_dimension == 1536
-    assert settings.embedding_model == "text-embedding-3-small"
-    assert settings.embedding_base_url == "https://api.openai.com/v1"
